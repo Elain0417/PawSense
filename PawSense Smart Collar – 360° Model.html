@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PawSense Smart Collar – 360° Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#EFECE6; --bg2:#DAD5CC; --panel:#FFFFFF; --line:#E6E2DA; --text:#1E1E1E; --muted:#74746F;
+  --green:#4E6E52; --green-bg:#E5EDE4; --orange:#E07A5F; --orange-bg:#FBE9E4; --chip:#F2F0EB;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg1:#24272A; --bg2:#141517; --panel:#1E2023; --line:#2E3134; --text:#F1F0EC; --muted:#A3A29E;
+    --green:#86A88A; --green-bg:#24302A; --orange:#EE8C72; --orange-bg:#3A2621; --chip:#2A2C30;
+  }
+}
+:root[data-theme="dark"]{
+  --bg1:#24272A; --bg2:#141517; --panel:#1E2023; --line:#2E3134; --text:#F1F0EC; --muted:#A3A29E;
+  --green:#86A88A; --green-bg:#24302A; --orange:#EE8C72; --orange-bg:#3A2621; --chip:#2A2C30;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg2);color:var(--text);font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible{outline:2px solid var(--orange);outline-offset:2px;border-radius:10px}
+
+.app{height:100%;display:grid;grid-template-columns:1fr 390px}
+.viewer{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,var(--bg1),var(--bg2));transition:background .8s}
+.viewer.night{background:radial-gradient(ellipse at 50% 40%,#1B2236,#070A12)}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.title{position:absolute;left:20px;top:16px;pointer-events:none;z-index:3}
+.title h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.01em}
+.title p{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+.viewer.night .title h1{color:#F1F0EC}.viewer.night .title p{color:#9AA3B8}
+.vbar{position:absolute;left:16px;bottom:16px;display:flex;gap:8px;z-index:3;flex-wrap:wrap}
+.vbtn{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;display:flex;gap:6px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.vbtn.on{background:var(--green);color:#fff;border-color:var(--green)}
+.status{position:absolute;right:16px;top:16px;z-index:3;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:12.5px;min-width:170px;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+.status b{display:block;font-size:14px;margin-top:2px}
+.status .bat{height:6px;border-radius:6px;background:var(--chip);margin-top:6px;overflow:hidden}
+.status .bat i{display:block;height:100%;background:var(--green);transition:width .3s}
+
+.labels{position:absolute;inset:0;pointer-events:none;z-index:2}
+.lbl{position:absolute;transform:translate(-4px,-4px);transition:opacity .3s}
+.lbl .pin{width:9px;height:9px;border-radius:50%;background:var(--orange);border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.lbl .txt{position:absolute;left:14px;bottom:10px;white-space:nowrap;background:var(--panel);color:var(--text);border:1px solid var(--line);font-size:12px;font-weight:600;padding:5px 9px;border-radius:9px;box-shadow:0 3px 10px rgba(0,0,0,.12)}
+.lbl .txt small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.lbl.left .txt{left:auto;right:14px}
+.lbl.down .txt{bottom:auto;top:10px}
+.lbl::before{content:"";position:absolute;left:4px;bottom:4px;width:14px;height:1.5px;background:var(--orange);transform-origin:left;transform:rotate(-35deg)}
+.lbl.left::before{left:auto;right:-6px;transform-origin:right;transform:rotate(35deg)}
+.lbl.down::before{transform:rotate(35deg);bottom:auto;top:4px}
+
+/* panel */
+.panel{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.panel-head{padding:18px 20px 10px}
+.panel-head h2{margin:0;font-size:13px;color:var(--muted);font-weight:600}
+.feats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 16px 12px}
+.feat{border:1px solid var(--line);border-radius:12px;padding:8px 4px;font-size:10.5px;line-height:1.25;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:66px}
+.feat .n{width:22px;height:22px;border-radius:50%;background:var(--chip);display:grid;place-items:center;font-weight:700;font-size:11px}
+.feat.on{border-color:var(--green);background:var(--green-bg)}
+.feat.on .n{background:var(--green);color:#fff}
+.card{flex:1;overflow-y:auto;padding:4px 20px 20px;border-top:1px solid var(--line)}
+.card h3{font-size:20px;margin:14px 0 6px;letter-spacing:-.01em}
+.card .lead{font-size:14px;color:var(--muted);line-height:1.5;margin:0 0 12px}
+.card ul{margin:0 0 14px;padding-left:18px;font-size:13.5px;line-height:1.55}
+.card li{margin-bottom:4px}
+.ctl-label{font-size:12px;color:var(--muted);font-weight:600;margin:14px 0 6px}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:32px;height:32px;border-radius:50%;border:3px solid var(--panel);box-shadow:0 0 0 1px var(--line)}
+.sw.on{box-shadow:0 0 0 2px var(--text)}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px}
+.pill.on{background:var(--text);color:var(--panel);border-color:var(--text)}
+.ledtable{width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:6px}
+.ledtable td{padding:7px 4px;border-bottom:1px solid var(--line)}
+.ledtable tr{cursor:pointer}
+.ledtable tr.on td{font-weight:700}
+.ledtable .d{width:14px;height:14px;border-radius:50%;display:inline-block;vertical-align:middle}
+.blinkd{animation:bd 1s infinite}@keyframes bd{50%{opacity:.15}}
+.bigbtn{width:100%;background:var(--green);color:#fff;border-radius:999px;padding:11px 16px;font-weight:600;font-size:14px;margin-top:8px}
+.bigbtn.orange{background:var(--orange)}
+.note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.45}
+.prog{height:4px;background:var(--chip);border-radius:4px;overflow:hidden;margin:0 16px 10px}
+.prog i{display:block;height:100%;width:0;background:var(--orange)}
+.fallback{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:30px;font-size:14px;color:var(--muted)}
+
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:56% 44%}
+  .viewer,.panel{min-width:0}
+  .panel{border-left:0;border-top:1px solid var(--line)}
+  .panel-head{display:none}
+  .feats{grid-template-columns:repeat(8,minmax(78px,1fr));overflow-x:auto;padding:10px 12px}
+  .title h1{font-size:16px}.title p{display:none}
+  .status{top:12px;right:12px;min-width:140px;padding:8px 10px}
+  .lbl .txt{font-size:11px;padding:4px 7px}
+  .vbar{left:10px;bottom:10px}
+}
+@media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="viewer" id="viewer">
+    <div class="title"><h1>🐾 PawSense Smart Collar</h1><p>360° model • drag to rotate, scroll or pinch to zoom</p></div>
+    <div class="status" id="status"><span id="stLab">Battery</span><b id="stVal">67%</b><div class="bat"><i id="stBar" style="width:67%"></i></div></div>
+    <div class="labels" id="labels"></div>
+    <div class="vbar">
+      <button class="vbtn on" id="tourBtn">▶ Play tour</button>
+      <button class="vbtn on" id="rotBtn">⟳ Auto-rotate</button>
+      <button class="vbtn" id="resetBtn">Reset view</button>
+    </div>
+    <div class="fallback" id="fallback">This 3D model needs WebGL. Please open it in a recent Chrome, Edge or Safari browser.</div>
+  </div>
+  <aside class="panel">
+    <div class="panel-head"><h2>Collar features (from our Crazy 8's)</h2></div>
+    <div class="feats" id="feats"></div>
+    <div class="prog"><i id="prog"></i></div>
+    <div class="card" id="card"></div>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+if(!window.THREE){ document.getElementById('fallback').style.display='grid'; return; }
+const $=s=>document.querySelector(s);
+const viewer=$('#viewer');
+let renderer;
+try{ renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); }catch(e){ $('#fallback').style.display='grid'; return; }
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.outputEncoding=THREE.sRGBEncoding;
+viewer.insertBefore(renderer.domElement, viewer.firstChild);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(35,1,0.05,100);
+camera.position.set(4.6,3.0,6.2);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.dampingFactor=.08; controls.autoRotate=true; controls.autoRotateSpeed=1.1;
+controls.minDistance=1.6; controls.maxDistance=14; controls.target.set(0,0,0);
+
+/* ---------- lights ---------- */
+const hemi=new THREE.HemisphereLight(0xffffff,0x8a8070,0.9); scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,1.0); key.position.set(3,5,4); scene.add(key);
+const rim=new THREE.DirectionalLight(0xffffff,0.45); rim.position.set(-4,2,-3); scene.add(rim);
+const ledLight=new THREE.PointLight(0x4E6E52,0.8,1.6); scene.add(ledLight);
+const torch=new THREE.SpotLight(0xfff4d6,0,9,0.35,0.6); torch.position.set(4,2,4); scene.add(torch); scene.add(torch.target);
+
+/* ---------- helpers ---------- */
+function radialTex(inner,outer){
+  const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d');
+  const gr=g.createRadialGradient(64,64,0,64,64,64); gr.addColorStop(0,inner); gr.addColorStop(1,outer);
+  g.fillStyle=gr; g.fillRect(0,0,128,128); return new THREE.CanvasTexture(c);
+}
+const glowTex=radialTex('rgba(255,255,255,1)','rgba(255,255,255,0)');
+const shadowTex=radialTex('rgba(0,0,0,.35)','rgba(0,0,0,0)');
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const tmp=new THREE.Vector3();
+
+/* ---------- strap texture ---------- */
+const COLORS=[['Forest','#4E6E52'],['Coral','#E07A5F'],['Navy','#2E4A7A'],['Sunflower','#E2AE3A'],['Rose','#D987A6'],['Charcoal','#3A3B3D']];
+const PATTERNS=['Plain','Paw print','Stripes','Camo'];
+let strapColor='#4E6E52', strapPattern='Paw print', size='large';
+function shade(hex,amt){ const n=parseInt(hex.slice(1),16); let r=(n>>16)+amt,g=(n>>8&255)+amt,b=(n&255)+amt; r=clamp(r,0,255);g=clamp(g,0,255);b=clamp(b,0,255); return 'rgb('+r+','+g+','+b+')'; }
+function makeStrapTex(color,pattern){
+  const c=document.createElement('canvas'); c.width=2048; c.height=96; const g=c.getContext('2d');
+  g.fillStyle=color; g.fillRect(0,0,2048,96);
+  // stitching
+  g.strokeStyle=shade(color,55); g.setLineDash([10,8]); g.lineWidth=2;
+  g.beginPath(); g.moveTo(0,8); g.lineTo(2048,8); g.moveTo(0,88); g.lineTo(2048,88); g.stroke(); g.setLineDash([]);
+  const light=shade(color,45), dark=shade(color,-35);
+  if(pattern==='Paw print'){
+    g.fillStyle=light;
+    for(let x=40;x<2048;x+=90){ const y=(x/90)%2<1?36:60; const s=.8;
+      g.beginPath(); g.ellipse(x,y+6*s,9*s,7*s,0,0,7); g.fill();
+      [[-10,-5],[-4,-11],[4,-11],[10,-5]].forEach(p=>{ g.beginPath(); g.ellipse(x+p[0]*s,y+p[1]*s,3.2*s,4*s,0,0,7); g.fill(); }); }
+  } else if(pattern==='Stripes'){
+    g.fillStyle=light; for(let x=-100;x<2148;x+=48){ g.beginPath(); g.moveTo(x,96); g.lineTo(x+20,96); g.lineTo(x+70,0); g.lineTo(x+50,0); g.fill(); }
+  } else if(pattern==='Camo'){
+    let s=7; const rnd=()=>{ s=(s*9301+49297)%233280; return s/233280; };
+    [dark,light,shade(color,-60)].forEach(col=>{ g.fillStyle=col; for(let i=0;i<70;i++){ const x=rnd()*2048,y=rnd()*96,r=8+rnd()*16; g.beginPath(); g.ellipse(x,y,r*1.6,r,rnd()*3,0,7); g.fill(); } });
+  }
+  const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t;
+}
+
+/* ---------- collar ---------- */
+const world=new THREE.Group(); scene.add(world);          // moves in home-zone demo
+const collar=new THREE.Group(); world.add(collar);
+collar.rotation.x=0.12;
+const shadow=new THREE.Mesh(new THREE.PlaneGeometry(4.4,4.4),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false}));
+shadow.rotation.x=-Math.PI/2; shadow.position.y=-0.62; world.add(shadow);
+
+const strap=new THREE.Group(); collar.add(strap);
+const T=0.06;              // strap thickness
+let R=1.5, W=0.44;
+const mats={
+  strap:new THREE.MeshStandardMaterial({roughness:.75}),
+  edge:new THREE.MeshStandardMaterial({roughness:.8}),
+  lining:new THREE.MeshStandardMaterial({color:0xEFE6D8,roughness:1,side:THREE.BackSide}),
+  stripe:new THREE.MeshStandardMaterial({color:0xD5D9DE,metalness:.5,roughness:.3,emissive:0xffffff,emissiveIntensity:0}),
+  patch:new THREE.MeshStandardMaterial({color:0x45484B,roughness:.95}),
+  buckle:new THREE.MeshStandardMaterial({color:0x2C2D2F,roughness:.5}),
+  metal:new THREE.MeshStandardMaterial({color:0xC9CCD0,metalness:.9,roughness:.25}),
+  magnet:new THREE.MeshStandardMaterial({color:0x9AA0A6,metalness:.8,roughness:.3,emissive:0xE07A5F,emissiveIntensity:0}),
+  hole:new THREE.MeshStandardMaterial({color:0x1A1A1A,roughness:1})
+};
+const refs={};
+function radialPlace(obj,angle,radius,y){ const g=new THREE.Group(); g.rotation.y=angle; obj.position.z=radius; if(y) obj.position.y=y; g.add(obj); return g; }
+function buildStrap(){
+  while(strap.children.length) strap.remove(strap.children[0]);
+  if(mats.strap.map) mats.strap.map.dispose();
+  mats.strap.map=makeStrapTex(strapColor,strapPattern); mats.strap.needsUpdate=true;
+  mats.edge.color.set(shade(strapColor,-30));
+  const outer=new THREE.Mesh(new THREE.CylinderGeometry(R+T,R+T,W,160,1,true),mats.strap); strap.add(outer);
+  const inner=new THREE.Mesh(new THREE.CylinderGeometry(R,R,W,160,1,true),mats.lining); strap.add(inner);
+  [W/2,-W/2].forEach(y=>{ const r=new THREE.Mesh(new THREE.RingGeometry(R,R+T,160),mats.edge); r.rotation.x=y>0?-Math.PI/2:Math.PI/2; r.position.y=y; strap.add(r); });
+  // reflective stripe (skip the pod area)
+  const st=new THREE.Mesh(new THREE.CylinderGeometry(R+T+.004,R+T+.004,W*.16,160,1,true,0.42,Math.PI*2-0.84),mats.stripe);
+  st.position.y=-W*.3; strap.add(st); refs.stripe=st;
+  // soft attachment patch for the pod
+  const ph=Math.max(W*.96,0.5);
+  const patch=new THREE.Mesh(new THREE.CylinderGeometry(R+T+.018,R+T+.018,ph,40,1,true,-0.26,0.52),mats.patch); strap.add(patch);
+  const pm=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.012,32),mats.magnet); pm.rotation.x=Math.PI/2;
+  strap.add(radialPlace(pm,0,R+T+.026)); refs.patchMag=pm;
+  // buckle + D ring at the back
+  const b=new THREE.Mesh(new THREE.BoxGeometry(.36,W*1.18,.07),mats.buckle); strap.add(radialPlace(b,Math.PI,R+T+.035)); refs.buckle=b;
+  const bs=new THREE.Mesh(new THREE.BoxGeometry(.04,W*1.0,.08),mats.metal); strap.add(radialPlace(bs,Math.PI,R+T+.04));
+  const d=new THREE.Mesh(new THREE.TorusGeometry(.13,.018,12,40,Math.PI),mats.metal); d.rotation.z=-Math.PI/2; d.rotation.y=Math.PI/2;
+  const dg=new THREE.Group(); dg.add(d); strap.add(radialPlace(dg,Math.PI+0.33,R+T+.02));
+  // adjustment holes
+  for(let i=0;i<5;i++){ const h=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.02,16),mats.hole); h.rotation.x=Math.PI/2; strap.add(radialPlace(h,Math.PI-0.32-i*.11,R+T+.002)); }
+  refs.holeAnchor=new THREE.Object3D(); strap.add(radialPlace(refs.holeAnchor,Math.PI-0.55,R+T+.01));
+  refs.liningAnchor=new THREE.Object3D(); strap.add(radialPlace(refs.liningAnchor,2.5,R-.01,W*.2));
+  refs.strapAnchor=new THREE.Object3D(); strap.add(radialPlace(refs.strapAnchor,-1.15,R+T+.01,W*.3));
+  refs.stripeAnchor=new THREE.Object3D(); strap.add(radialPlace(refs.stripeAnchor,-0.9,R+T+.01,-W*.3));
+  refs.patchAnchor=new THREE.Object3D(); strap.add(radialPlace(refs.patchAnchor,0.22,R+T+.03,-ph*.35));
+  refs.solarSlot=new THREE.Group(); strap.add(radialPlace(refs.solarSlot,0.95,R+T+.03));
+  podBaseZ=R+T+.032+.095;
+}
+let podBaseZ=0, solar=null;
+
+/* ---------- pod ---------- */
+const pod=new THREE.Group(); collar.add(pod);
+function roundedRect(w,h,r){ const s=new THREE.Shape(); const x=-w/2,y=-h/2;
+  s.moveTo(x+r,y); s.lineTo(x+w-r,y); s.quadraticCurveTo(x+w,y,x+w,y+r); s.lineTo(x+w,y+h-r); s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  s.lineTo(x+r,y+h); s.quadraticCurveTo(x,y+h,x,y+h-r); s.lineTo(x,y+r); s.quadraticCurveTo(x,y,x+r,y); return s; }
+const shellMat=new THREE.MeshStandardMaterial({color:0xF3F1EC,roughness:.32,metalness:.05,transparent:true,opacity:1});
+const shellGeo=new THREE.ExtrudeGeometry(roundedRect(.6,.48,.15),{depth:.10,bevelEnabled:true,bevelThickness:.04,bevelSize:.03,bevelSegments:5,curveSegments:16});
+shellGeo.center();
+const shell=new THREE.Mesh(shellGeo,shellMat); pod.add(shell);
+const faceMat=new THREE.MeshStandardMaterial({color:0x2A2C2E,roughness:.4,transparent:true,opacity:1});
+function pawShapes(){
+  const list=[]; const add=(x,y,rx,ry,rot)=>{ const s=new THREE.Shape(); s.absellipse(x,y,rx,ry,0,Math.PI*2,false,rot||0); list.push(s); };
+  add(0,-.03,.068,.054);            // main pad
+  add(-.088,.035,.027,.035,.35);    // outer left toe
+  add(-.034,.08,.027,.035,.12);     // inner left toe
+  add(.034,.08,.027,.035,-.12);     // inner right toe
+  add(.088,.035,.027,.035,-.35);    // outer right toe
+  return list;
+}
+const face=new THREE.Mesh(new THREE.ShapeGeometry(pawShapes(),24),faceMat); face.position.set(0,-.01,.091); pod.add(face);
+const ledMat=new THREE.MeshBasicMaterial({color:0x4E6E52});
+const led=new THREE.Mesh(new THREE.TorusGeometry(.165,.018,14,72),ledMat); led.position.z=.095; pod.add(led);
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0x4E6E52,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.9}));
+glow.scale.set(.55,.55,1); glow.position.z=.12; pod.add(glow);
+const podMag=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.012,32),mats.magnet); podMag.rotation.x=Math.PI/2; podMag.position.z=-.096; pod.add(podMag);
+// internals (x-ray)
+const inner=new THREE.Group(); inner.visible=false; pod.add(inner);
+function box(w,h,d,col,x,y,z){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:col,roughness:.5})); m.position.set(x,y,z); inner.add(m); return m; }
+function cyl(r,h,col,x,y,z,rx){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,24),new THREE.MeshStandardMaterial({color:col,roughness:.4,metalness:.3})); m.position.set(x,y,z); if(rx) m.rotation.x=rx; inner.add(m); return m; }
+const parts={
+  battery:box(.4,.22,.04,0x3B82C4,0,-.02,-.035),
+  pcb:box(.48,.36,.01,0x2F6B45,0,0,.005),
+  ble:box(.09,.09,.02,0x111111,-.13,.08,.02),
+  imu:box(.06,.06,.02,0x222222,.02,.1,.02),
+  gps:box(.1,.07,.02,0x555555,.15,.06,.02),
+  mic:cyl(.022,.03,0xB0B4B8,.2,.17,.025,Math.PI/2),
+  speaker:cyl(.07,.02,0x333333,-.12,-.1,.035,Math.PI/2),
+  vib:cyl(.025,.05,0xC9A227,.15,-.1,.025,0),
+  temp:cyl(.04,.01,0xD4A84B,-.08,0,-.085,Math.PI/2),
+  pulse:cyl(.045,.01,0xE07A5F,.08,0,-.085,Math.PI/2),
+  nfc:box(.3,.22,.004,0xB87333,0,0,.06)
+};
+parts.nfc.material.transparent=true; parts.nfc.material.opacity=.7;
+
+/* ---------- solar panel (optional accessory) ---------- */
+(function(){
+  const c=document.createElement('canvas'); c.width=256;c.height=160; const g=c.getContext('2d');
+  g.fillStyle='#14234A'; g.fillRect(0,0,256,160); g.strokeStyle='#5A78B8'; g.lineWidth=2;
+  for(let x=0;x<=256;x+=32){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,160); g.stroke(); }
+  for(let y=0;y<=160;y+=32){ g.beginPath(); g.moveTo(0,y); g.lineTo(256,y); g.stroke(); }
+  const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding;
+  solar=new THREE.Group();
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(.5,.32,.035),new THREE.MeshStandardMaterial({color:0x2A2C2E,roughness:.5}));
+  const top=new THREE.Mesh(new THREE.PlaneGeometry(.46,.28),new THREE.MeshStandardMaterial({map:t,metalness:.4,roughness:.25}));
+  top.position.z=.019; solar.add(frame); solar.add(top); solar.visible=false;
+})();
+
+/* ---------- sun, phone, house, zone ---------- */
+const sun=new THREE.Group(); sun.position.set(-2.6,2.7,1.2);
+sun.add(new THREE.Mesh(new THREE.SphereGeometry(.28,32,16),new THREE.MeshBasicMaterial({color:0xFFD34D})));
+const sunGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xFFC93D,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})); sunGlow.scale.set(1.6,1.6,1); sun.add(sunGlow);
+sun.visible=false; scene.add(sun);
+
+const phoneCanvas=document.createElement('canvas'); phoneCanvas.width=360; phoneCanvas.height=720;
+const phoneTex=new THREE.CanvasTexture(phoneCanvas); phoneTex.encoding=THREE.sRGBEncoding;
+const phone=new THREE.Group();
+const pb=new THREE.Mesh(new THREE.BoxGeometry(.56,1.08,.05),new THREE.MeshStandardMaterial({color:0x1C1C1E,roughness:.4,metalness:.4}));
+const ps=new THREE.Mesh(new THREE.PlaneGeometry(.5,1.0),new THREE.MeshBasicMaterial({map:phoneTex})); ps.position.z=.026;
+phone.add(pb); phone.add(ps); phone.scale.setScalar(.8); phone.visible=false; scene.add(phone);
+
+function rr(g,x,y,w,h,r,fill){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); g.fillStyle=fill; g.fill(); }
+function drawPhone(kind,data){
+  const g=phoneCanvas.getContext('2d'); const W2=360,H2=720;
+  g.fillStyle='#F4F2EE'; g.fillRect(0,0,W2,H2);
+  g.fillStyle='#1E1E1E'; g.font='600 20px Inter, Arial'; g.fillText('9:41',28,40);
+  rr(g,130,18,100,28,14,'#000');
+  if(kind==='health'){
+    g.font='800 30px Inter, Arial'; g.fillText('Rocky • Live vitals',24,100);
+    g.font='500 17px Inter, Arial'; g.fillStyle='#4E6E52'; g.fillText('● Bluetooth connected',24,130);
+    const rows=[['Temperature',data.temp+' °C','#E07A5F'],['Pulse',data.hr+' bpm','#E07A5F'],['Breathing',data.br+' /min','#1E88E5'],['Sound',data.snd,'#4E6E52']];
+    rows.forEach((r,i)=>{ const y=160+i*120; rr(g,20,y,320,104,20,'#fff'); g.fillStyle='#7B7B78'; g.font='500 18px Inter, Arial'; g.fillText(r[0],40,y+36);
+      g.fillStyle='#1E1E1E'; g.font='800 32px Inter, Arial'; g.fillText(r[1],40,y+80);
+      g.strokeStyle=r[2]; g.lineWidth=3; g.beginPath(); for(let k=0;k<12;k++){ const xx=210+k*10, yy=y+60+Math.sin(k*1.3+data.t*3+i)*14; k?g.lineTo(xx,yy):g.moveTo(xx,yy);} g.stroke(); });
+  } else if(kind==='nfc'){
+    rr(g,0,60,360,180,0,'#E07A5F');
+    g.fillStyle='#fff'; g.font='800 34px Inter, Arial'; g.fillText('I\'m lost! 🐾',24,130);
+    g.font='500 19px Inter, Arial'; g.fillText('Tapped via NFC on my collar',24,165); g.fillText('Please help me get home',24,195);
+    g.fillStyle='#1E1E1E'; g.font='800 28px Inter, Arial'; g.fillText('Rocky',24,290);
+    g.font='500 18px Inter, Arial'; g.fillStyle='#7B7B78'; g.fillText('Labrador • Friendly • Chicken allergy',24,320);
+    rr(g,20,345,320,120,18,'#fff'); g.fillStyle='#1E1E1E'; g.font='600 18px Inter, Arial'; g.fillText('Message from owner (Elain):',36,380);
+    g.font='500 17px Inter, Arial'; g.fillStyle='#555'; g.fillText('"Thank you for finding him!',36,412); g.fillText(' Please message me. RM200 reward."',36,438);
+    if(data.step<2){ rr(g,20,500,320,64,32,'#4E6E52'); g.fillStyle='#fff'; g.font='700 20px Inter, Arial'; g.fillText('Send message to owner',62,540);
+      rr(g,20,580,320,64,32,'#fff'); g.fillStyle='#1E1E1E'; g.fillText('Share my location',88,620); }
+    else { rr(g,20,500,320,140,20,'#E2EBE1'); g.fillStyle='#4E6E52'; g.font='800 24px Inter, Arial'; g.fillText('✓ Message sent',40,548); g.font='500 17px Inter, Arial'; g.fillStyle='#3E5A41'; g.fillText('Elain got your message and',40,585); g.fillText('your location. She\'s on her way.',40,612); }
+  } else if(kind==='calm'){
+    g.font='800 30px Inter, Arial'; g.fillText('Calming mode',24,100);
+    rr(g,20,125,320,120,20, data.p<.35?'#FBE9E4':(data.p<.7?'#FCEFE1':'#E2EBE1'));
+    g.fillStyle='#1E1E1E'; g.font='600 18px Inter, Arial'; g.fillText('Rocky\'s stress level',40,162);
+    g.font='800 40px Inter, Arial'; g.fillText(Math.round(80-data.p*55)+'%',40,220);
+    g.font='600 18px Inter, Arial'; g.fillText(data.p<.35?'Anxious':(data.p<.7?'Settling':'Calm'),200,220);
+    const items=[['🔊 Playing your voice','"It\'s okay Rocky, good boy"'],['〰 Gentle vibration','Soft pulse every 4 s']];
+    items.forEach((it,i)=>{ const y=275+i*110; rr(g,20,y,320,92,18,'#fff'); g.fillStyle='#1E1E1E'; g.font='700 20px Inter, Arial'; g.fillText(it[0],40,y+38); g.fillStyle='#7B7B78'; g.font='500 16px Inter, Arial'; g.fillText(it[1],40,y+68); });
+    rr(g,20,520,320,12,6,'#E7E5E0'); rr(g,20,520,Math.max(12,320*data.p),12,6,'#4E6E52');
+    g.fillStyle='#7B7B78'; g.font='500 16px Inter, Arial'; g.fillText('Session '+Math.round(data.p*100)+'% complete',20,560);
+  }
+  phoneTex.needsUpdate=true;
+}
+
+const house=new THREE.Group();
+const hb=new THREE.Mesh(new THREE.BoxGeometry(.9,.6,.8),new THREE.MeshStandardMaterial({color:0xF3EEE6,roughness:.9}));
+const hr=new THREE.Mesh(new THREE.ConeGeometry(.75,.5,4),new THREE.MeshStandardMaterial({color:0xC0634B,roughness:.8})); hr.position.y=.55; hr.rotation.y=Math.PI/4;
+hb.position.y=0; house.add(hb); house.add(hr); house.position.set(-2.1,-0.3,-2.0); house.visible=false; scene.add(house);
+const zone=new THREE.Group(); zone.visible=false; scene.add(zone);
+const zoneDisc=new THREE.Mesh(new THREE.CircleGeometry(3.2,96),new THREE.MeshBasicMaterial({color:0x4E6E52,transparent:true,opacity:.14,depthWrite:false}));
+zoneDisc.rotation.x=-Math.PI/2; zoneDisc.position.y=-.6; zone.add(zoneDisc);
+const zpts=[]; for(let i=0;i<=96;i++){ const a=i/96*Math.PI*2; zpts.push(new THREE.Vector3(Math.cos(a)*3.2,-.59,Math.sin(a)*3.2)); }
+const zoneLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(zpts),new THREE.LineDashedMaterial({color:0x4E6E52,dashSize:.15,gapSize:.1}));
+zoneLine.computeLineDistances(); zone.add(zoneLine);
+const ground=new THREE.Mesh(new THREE.CircleGeometry(9,64),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.05,depthWrite:false}));
+ground.rotation.x=-Math.PI/2; ground.position.y=-.61; zone.add(ground);
+
+/* charger */
+const charger=new THREE.Group();
+const puck=new THREE.Mesh(new THREE.CylinderGeometry(.26,.28,.07,48),new THREE.MeshStandardMaterial({color:0xF3F1EC,roughness:.4}));
+const puckTop=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.074,32),mats.magnet);
+const cablePts=[new THREE.Vector3(.26,0,0),new THREE.Vector3(.7,-.02,.1),new THREE.Vector3(1.1,-.04,.6),new THREE.Vector3(1.5,-.04,.7)];
+const cable=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(cablePts),30,.018,8),new THREE.MeshStandardMaterial({color:0xEDEDED,roughness:.6}));
+charger.add(puck); charger.add(puckTop); charger.add(cable); charger.visible=false; scene.add(charger);
+
+/* ---------- waves, field lines, particles ---------- */
+function makeWaves(color,n){
+  const g=new THREE.Group(); const arr=[];
+  for(let i=0;i<n;i++){ const m=new THREE.Mesh(new THREE.RingGeometry(.92,1,64),new THREE.MeshBasicMaterial({color,transparent:true,side:THREE.DoubleSide,depthWrite:false})); g.add(m); arr.push(m); }
+  g.visible=false; scene.add(g); return {g,arr};
+}
+const bleWaves=makeWaves(0x1E88E5,3), nfcWaves=makeWaves(0x4FA3F0,4), sndWaves=makeWaves(0x86A88A,4);
+function runWaves(W,t,origin,look,max,speed){
+  W.g.visible=true;
+  W.arr.forEach((m,i)=>{ const p=((t*speed)+i/W.arr.length)%1; const s=.08+p*max; m.scale.set(s,s,s); m.material.opacity=(1-p)*.7; m.position.copy(origin); if(look) m.lookAt(look); else m.rotation.set(-Math.PI/2,0,0); });
+}
+const fieldLines=[]; const fieldGroup=new THREE.Group(); scene.add(fieldGroup);
+for(let i=0;i<7;i++){ const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(new Array(24).fill(0).map(()=>new THREE.Vector3())),new THREE.LineBasicMaterial({color:0xE07A5F,transparent:true,opacity:.0})); fieldGroup.add(l); fieldLines.push(l); }
+const pGeo=new THREE.SphereGeometry(.025,8,6); const particles=[];
+const pGroup=new THREE.Group(); scene.add(pGroup);
+for(let i=0;i<46;i++){ const m=new THREE.Mesh(pGeo,new THREE.MeshBasicMaterial({color:0xFFD34D,transparent:true})); m.userData.ph=Math.random(); m.userData.sp=.25+Math.random()*.25; pGroup.add(m); particles.push(m); }
+pGroup.visible=false;
+
+/* ---------- labels ---------- */
+const labelsEl=$('#labels'); let labels=[];
+function setLabels(list){ labelsEl.innerHTML=''; labels=list.map(l=>{ const d=document.createElement('div'); d.className='lbl'+(l.cls?' '+l.cls:''); d.innerHTML='<div class="pin"></div><div class="txt">'+l.t+'</div>'; labelsEl.appendChild(d); return {...l,el:d}; }); }
+function updateLabels(){
+  const w=viewer.clientWidth,h=viewer.clientHeight;
+  labels.forEach(l=>{ const o=typeof l.a==='function'?l.a():l.a; if(!o){ l.el.style.opacity=0; return; }
+    if(o.isVector3) tmp.copy(o); else o.getWorldPosition(tmp);
+    if(l.show && !l.show()){ l.el.style.opacity=0; return; }
+    tmp.project(camera); const vis=tmp.z<1;
+    l.el.style.opacity=vis?1:0; l.el.style.left=((tmp.x*.5+.5)*w)+'px'; l.el.style.top=((-tmp.y*.5+.5)*h)+'px';
+    if(l.dyn) l.el.querySelector('.txt').innerHTML=l.dyn(); });
+}
+
+/* ---------- LED ---------- */
+const LED={green:[0x3FBF62,'Relaxed'],yellow:[0xF2C230,'Alert / Excited'],red:[0xE5483B,'Pain / Stress'],blue:[0x2F8CFF,'Lost Mode']};
+let ledState='green';
+function setLedColor(hex,on){ const c=new THREE.Color(hex); ledMat.color.copy(on?c:new THREE.Color(0x30343a)); glow.material.color.copy(c); glow.material.opacity=on?.7:0; ledLight.color.copy(c); ledLight.intensity=on?.9:0; }
+
+/* ---------- status box ---------- */
+function setStatus(lab,val,pct){ $('#stLab').textContent=lab; $('#stVal').innerHTML=val; if(pct==null){ $('#stBar').parentElement.style.display='none'; } else { $('#stBar').parentElement.style.display='block'; $('#stBar').style.width=pct+'%'; } }
+
+/* ---------- camera presets ---------- */
+let camTween=null;
+function flyTo(pos,target,dur){ const t1=new THREE.Vector3(...target); let p1=new THREE.Vector3(...pos); const k=camera.aspect<1?1.3:(camera.aspect<1.3?1.15:1); p1=t1.clone().add(p1.sub(t1).multiplyScalar(k)); camTween={p0:camera.position.clone(),t0:controls.target.clone(),p1,t1,s:performance.now(),d:dur||1200}; }
+controls.addEventListener('start',()=>{ camTween=null; });
+
+/* ---------- features ---------- */
+const FEATURES=[
+ {id:'custom',name:'Customizable collar',icon:'🎨',cam:[[4.6,3.0,6.2],[0,-.1,0]]},
+ {id:'magnet',name:'Magnetic pod',icon:'🧲',cam:[[2.8,1.5,5.4],[0,0,1.2]]},
+ {id:'led',name:'LED status',icon:'💡',cam:[[1.5,1.0,4.9],[0,0,1.4]]},
+ {id:'health',name:'Health sensors',icon:'❤️',cam:[[1.2,1.0,5.0],[.65,.05,1.6]]},
+ {id:'charge',name:'Charging & home',icon:'🔋',cam:[[3.6,2.6,6.4],[.6,-.3,1.3]]},
+ {id:'lost',name:'Lost Dog Mode',icon:'🔵',cam:[[2.4,1.4,6.0],[.7,0,1.5]]},
+ {id:'calm',name:'AI calming',icon:'🔊',cam:[[1.5,1.1,5.2],[.65,0,1.5]]},
+ {id:'energy',name:'Outdoor energy',icon:'☀️',cam:[[4.0,3.4,6.6],[-.4,.5,.6]]}
+];
+let mode=0, mt=0, ledManual=null, magSwap=false, chargePhase='auto', energyPhase='auto', lostStep=0;
+
+function card(){
+  const f=FEATURES[mode]; let h='';
+  if(f.id==='custom'){
+    h='<h3>1. Customizable collar</h3><p class="lead">Two parts: a strap and one electronic pod. Pick the strap that fits your dog\'s size and style. The pod stays the same.</p>'+
+    '<ul><li>Adjustable buckle with sizing holes, easy to put on</li><li>Soft padded lining on the inside</li><li>Small and large straps share the same pod</li></ul>'+
+    '<div class="ctl-label">Strap colour</div><div class="swatches">'+COLORS.map(c=>'<button class="sw'+(c[1]===strapColor?' on':'')+'" style="background:'+c[1]+'" data-color="'+c[1]+'" aria-label="'+c[0]+'"></button>').join('')+'</div>'+
+    '<div class="ctl-label">Pattern</div><div class="pills">'+PATTERNS.map(p=>'<button class="pill'+(p===strapPattern?' on':'')+'" data-pattern="'+p+'">'+p+'</button>').join('')+'</div>'+
+    '<div class="ctl-label">Strap size</div><div class="pills"><button class="pill'+(size==='small'?' on':'')+'" data-size="small">Small dog (up to 10 kg)</button><button class="pill'+(size==='large'?' on':'')+'" data-size="large">Large dog (over 10 kg)</button></div>';
+  } else if(f.id==='magnet'){
+    h='<h3>2. Magnetic electronic pod</h3><p class="lead">The pod clicks onto a soft attachment patch on the strap with magnets. No screws, no clips.</p>'+
+    '<ul><li>Easy to attach, remove and move to another strap</li><li>Soft, skin-safe material on the side touching the dog</li><li>Strong magnetic lock so it stays on during play</li></ul>'+
+    '<button class="bigbtn" id="swapBtn">Swap pod to a new strap</button><p class="note">Watch the pod lift off, the strap change, and the pod snap back on.</p>';
+  } else if(f.id==='led'){
+    h='<h3>3. LED emotion &amp; status</h3><p class="lead">A light ring on the pod shows how the dog feels, so owners know at a glance without opening the app.</p>'+
+    '<table class="ledtable">'+Object.keys(LED).map(k=>'<tr data-led="'+k+'" class="'+(ledState===k?'on':'')+'"><td><span class="d'+(k==='blue'?' blinkd':'')+'" style="background:#'+LED[k][0].toString(16).padStart(6,'0')+'"></span></td><td>'+(k==='blue'?'Flashing blue':k[0].toUpperCase()+k.slice(1))+'</td><td>'+LED[k][1]+'</td></tr>').join('')+'</table>'+
+    '<p class="note">Tap a row to show that light. The model cycles through them automatically.</p>';
+  } else if(f.id==='health'){
+    h='<h3>4. Health monitoring</h3><p class="lead">The pod is shown see-through so you can view the sensors inside. Readings go to the app over Bluetooth.</p>'+
+    '<ul><li>🌡️ Body temperature (skin-contact sensor)</li><li>❤️ Pulse / heart rate</li><li>🫁 Breathing (motion sensor)</li><li>🎤 Sound through the microphone</li></ul>'+
+    '<p class="note">Used for wellness screening and trends, not medical diagnosis.</p>';
+  } else if(f.id==='charge'){
+    h='<h3>5. Smart charging &amp; home monitoring</h3><p class="lead">A magnetic charger with no open port keeps water and dirt out. At home, GPS turns off to save battery.</p>'+
+    '<ul><li>Magnetic charging puck, sealed pod</li><li>Bluetooth link to the app</li><li>Inside the home area: GPS off</li><li>Leaves the area: GPS and tracking turn back on</li></ul>'+
+    '<div class="pills"><button class="pill'+(chargePhase==='charge'?' on':'')+'" data-cp="charge">Magnetic charging</button><button class="pill'+(chargePhase==='home'?' on':'')+'" data-cp="home">Home area</button><button class="pill'+(chargePhase==='auto'?' on':'')+'" data-cp="auto">Play both</button></div>';
+  } else if(f.id==='lost'){
+    h='<h3>6. Lost Dog Mode</h3><p class="lead">When the owner turns on Lost Mode, the collar helps strangers spot the dog and contact the owner.</p>'+
+    '<ul><li>LED flashes blue</li><li>Reflective stripe shines in car lights and torches at night</li><li>NFC turns on: a stranger taps the collar with their phone</li><li>They see the dog\'s info and owner\'s message, and can message the owner</li></ul>'+
+    '<button class="bigbtn orange" id="replayLost">Replay: stranger finds Rocky</button>';
+  } else if(f.id==='calm'){
+    h='<h3>7. AI anxiety &amp; calming</h3><p class="lead">When the collar detects stress (heart rate, whining, pacing), the owner can start calming from the app.</p>'+
+    '<ul><li>🔊 Plays a recording of the owner\'s voice</li><li>〰️ Gentle vibration to comfort the dog</li><li>LED moves from red to yellow to green as the dog settles</li></ul>'+
+    '<button class="bigbtn" id="replayCalm">Replay calming session</button>';
+  } else if(f.id==='energy'){
+    h='<h3>8. Optional outdoor energy</h3><p class="lead">An add-on mini solar panel clips onto the strap. Movement also tops up the battery through kinetic charging.</p>'+
+    '<ul><li>☀️ Mini solar charging outdoors</li><li>🏃 Kinetic charging while the dog runs and plays</li><li>Extends battery life for outdoor dogs</li></ul>'+
+    '<div class="pills"><button class="pill'+(energyPhase==='solar'?' on':'')+'" data-ep="solar">Solar</button><button class="pill'+(energyPhase==='kinetic'?' on':'')+'" data-ep="kinetic">Kinetic</button><button class="pill'+(energyPhase==='auto'?' on':'')+'" data-ep="auto">Play both</button></div>'+
+    '<p class="note">Optional accessory, sold separately.</p>';
+  }
+  $('#card').innerHTML=h;
+  // wire controls
+  document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{ stopTour(); strapColor=b.dataset.color; buildStrap(); card(); });
+  document.querySelectorAll('[data-pattern]').forEach(b=>b.onclick=()=>{ stopTour(); strapPattern=b.dataset.pattern; buildStrap(); card(); });
+  document.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{ stopTour(); setSize(b.dataset.size); card(); });
+  document.querySelectorAll('[data-led]').forEach(r=>r.onclick=()=>{ stopTour(); ledManual=r.dataset.led; ledState=ledManual; card(); });
+  document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>{ stopTour(); chargePhase=b.dataset.cp; mt=0; card(); });
+  document.querySelectorAll('[data-ep]').forEach(b=>b.onclick=()=>{ stopTour(); energyPhase=b.dataset.ep; mt=0; card(); });
+  const sb=$('#swapBtn'); if(sb) sb.onclick=()=>{ stopTour(); magSwap=true; mt=0; };
+  const rl=$('#replayLost'); if(rl) rl.onclick=()=>{ stopTour(); mt=0; };
+  const rc=$('#replayCalm'); if(rc) rc.onclick=()=>{ stopTour(); mt=0; };
+}
+function setSize(s){ size=s; R=s==='small'?1.05:1.5; W=s==='small'?.3:.44; buildStrap(); sizePop=1; }
+let sizePop=0;
+
+function renderFeats(){
+  $('#feats').innerHTML=FEATURES.map((f,i)=>'<button class="feat'+(i===mode?' on':'')+'" data-f="'+i+'"><span class="n">'+(i+1)+'</span>'+f.icon+' '+f.name+'</button>').join('');
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ stopTour(); setMode(+b.dataset.f); });
+}
+
+function resetScene(){
+  collar.position.set(0,0,0); world.position.set(0,0,0); collar.rotation.set(.12,0,0);
+  pod.position.set(0,0,podBaseZ); pod.rotation.set(0,0,0);
+  shellMat.opacity=1; faceMat.opacity=1; shellMat.depthWrite=true; inner.visible=false;
+  phone.visible=false; sun.visible=false; house.visible=false; zone.visible=false; charger.visible=false; pGroup.visible=false;
+  [bleWaves,nfcWaves,sndWaves].forEach(w=>w.g.visible=false);
+  fieldLines.forEach(l=>l.material.opacity=0); fieldGroup.visible=false;
+  mats.magnet.emissiveIntensity=0; mats.stripe.emissiveIntensity=0;
+  viewer.classList.remove('night'); hemi.intensity=.9; key.intensity=1; rim.intensity=.45; torch.intensity=0;
+  if(solar.parent) solar.parent.remove(solar); solar.visible=false;
+  shadow.visible=true;
+  setStatus('Battery','67% • about 12 days',67);
+}
+function setMode(i){
+  mode=i; mt=0; lastChargePh=null; lastEnergyPh=null; phoneTick=0; lostStep=-1; ledManual=null; magSwap=false; chargePhase='auto'; energyPhase='auto';
+  resetScene(); renderFeats(); card();
+  const f=FEATURES[i]; flyTo(f.cam[0],f.cam[1]);
+  const L=[];
+  if(f.id==='custom'){
+    L.push({t:'Same electronic pod<small>fits small &amp; large straps</small>',a:pod});
+    L.push({t:'Adjustable buckle',a:()=>refs.holeAnchor,cls:'left'});
+    L.push({t:'Soft padded lining',a:()=>refs.liningAnchor,cls:'left down'});
+    L.push({t:'Strap: colours &amp; patterns',a:()=>refs.strapAnchor,cls:'left'});
+  } else if(f.id==='magnet'){
+    L.push({t:'Magnetic lock',a:podMag,cls:'left'});
+    L.push({t:'Soft attachment patch<small>skin-safe, comfortable</small>',a:()=>refs.patchAnchor,cls:'down'});
+    L.push({t:'Electronic pod',a:led});
+  } else if(f.id==='led'){
+    L.push({t:'',a:led,dyn:()=>'LED: '+(ledState==='blue'?'Flashing blue':ledState[0].toUpperCase()+ledState.slice(1))+'<small>'+LED[ledState][1]+'</small>'});
+  } else if(f.id==='health'){
+    L.push({t:'',a:parts.temp,cls:'left down',dyn:()=>'🌡️ Temperature<small>'+H.temp+' °C</small>'});
+    L.push({t:'',a:parts.pulse,cls:'down',dyn:()=>'❤️ Pulse<small>'+H.hr+' bpm</small>'});
+    L.push({t:'',a:parts.imu,cls:'left',dyn:()=>'🫁 Breathing (motion)<small>'+H.br+' breaths/min</small>'});
+    L.push({t:'',a:parts.mic,dyn:()=>'🎤 Microphone<small>'+H.snd+'</small>'});
+  } else if(f.id==='charge'){
+    L.push({t:'',a:pod,dyn:()=>chargeLabel});
+    L.push({t:'Magnetic charger<small>no open port, water &amp; dirt sealed</small>',a:puck,cls:'left',show:()=>charger.visible});
+    L.push({t:'Home area',a:house,cls:'left',show:()=>house.visible});
+  } else if(f.id==='lost'){
+    L.push({t:'LED flashing blue',a:led,cls:'left'});
+    L.push({t:'Reflective stripe<small>glows in torch &amp; car lights</small>',a:()=>refs.stripeAnchor,cls:'left down'});
+    L.push({t:'',a:phone,show:()=>phone.visible,dyn:()=>lostStep<1?'Stranger taps the collar (NFC)':(lostStep<2?'Sees Rocky\'s info &amp; owner message':'Message sent to owner ✓')});
+  } else if(f.id==='calm'){
+    L.push({t:'Speaker<small>plays owner\'s voice</small>',a:parts.speaker,cls:'left down'});
+    L.push({t:'Vibration motor<small>gentle comfort pulse</small>',a:parts.vib,cls:'down'});
+  } else if(f.id==='energy'){
+    L.push({t:'',a:()=>solar,show:()=>solar.visible,cls:'down',dyn:()=>'Mini solar panel<small>optional add-on</small>'});
+    L.push({t:'',a:pod,dyn:()=>energyLabel,cls:'left'});
+  }
+  setLabels(L);
+  $('#prog').style.width='0';
+}
+
+/* ---------- per-mode animation ---------- */
+const H={temp:'38.6',hr:82,br:24,snd:'Quiet, soft panting',t:0};
+let chargeLabel='', energyLabel='', battery=67, phoneTick=0;
+const podWorld=new THREE.Vector3(), podFront=new THREE.Vector3(), ledWorld=new THREE.Vector3();
+
+function animate(dt,time){
+  const f=FEATURES[mode]; mt+=dt;
+  pod.getWorldPosition(podWorld); led.getWorldPosition(ledWorld);
+  // default LED
+  let ledHex=LED.green[0], ledOn=true;
+
+  if(sizePop>0){ sizePop=Math.max(0,sizePop-dt*2); const s=1+Math.sin(sizePop*Math.PI)*.06; collar.scale.set(s,s,s); }
+
+  if(f.id==='custom'){
+    pod.position.z=podBaseZ;
+    if(tourOn){ const k=Math.floor(mt/2.2)%COLORS.length; if(COLORS[k][1]!==strapColor){ strapColor=COLORS[k][1]; strapPattern=PATTERNS[k%PATTERNS.length]; buildStrap(); card(); } }
+  }
+  else if(f.id==='magnet'){
+    const L=3.6, p=(mt%L)/L; let off=0;
+    if(p<.15) off=0; else if(p<.35) off=ease((p-.15)/.2)*.75; else if(p<.7) off=.75; else if(p<.8) off=.75*(1-Math.pow((p-.7)/.1,2)); else off=0;
+    if(magSwap && p>.45 && p<.5){ const i=(COLORS.findIndex(c=>c[1]===strapColor)+1)%COLORS.length; strapColor=COLORS[i][1]; buildStrap(); magSwap=false; }
+    pod.position.z=podBaseZ+off;
+    fieldGroup.visible=true; const near=off>.02; mats.magnet.emissiveIntensity=near?.6+Math.sin(time*8)*.3:(p>.8&&p<.86?1.2:0);
+    // field lines between pod magnet and patch magnet
+    const a=new THREE.Vector3(), b=new THREE.Vector3(); podMag.getWorldPosition(a); refs.patchMag.getWorldPosition(b);
+    fieldLines.forEach((l,i)=>{ const ang=i/fieldLines.length*Math.PI*2; const r=.07+.05*(i%2);
+      const pts=[]; for(let k=0;k<24;k++){ const u=k/23; const pt=new THREE.Vector3().lerpVectors(b,a,u);
+        const bulge=Math.sin(u*Math.PI)*(.12+off*.25); pt.x+=Math.cos(ang)*(r+bulge); pt.y+=Math.sin(ang)*(r+bulge); pts.push(pt); }
+      l.geometry.setFromPoints(pts); l.material.opacity=near?.55:0; });
+  }
+  else if(f.id==='led'){
+    const keys=Object.keys(LED); if(!ledManual){ const k=keys[Math.floor(mt/2.6)%4]; if(k!==ledState){ ledState=k; card(); } }
+    ledHex=LED[ledState][0]; if(ledState==='blue') ledOn=Math.floor(time*2.5)%2===0;
+    const tk=Math.floor(mt/2.6)%4; if(!ledManual) $('#prog').style.width=((mt%2.6)/2.6*100)+'%';
+  }
+  else if(f.id==='health'){
+    shellMat.opacity=.16; shellMat.depthWrite=false; faceMat.opacity=.25; inner.visible=true;
+    // phone
+    phone.visible=true; phone.position.set(podWorld.x+1.15,podWorld.y+.25,podWorld.z+.15); phone.lookAt(camera.position);
+    runWaves(bleWaves,time,ledWorld,phone.position,.5,.55);
+    H.t=time;
+    phoneTick+=dt; if(phoneTick>.4){ phoneTick=0; H.hr=Math.round(80+Math.sin(time*.7)*4+Math.random()*2); H.br=Math.round(23+Math.sin(time*.4)*2); H.temp=(38.5+Math.sin(time*.2)*.15).toFixed(1); H.snd=Math.sin(time*.5)>.6?'Short bark detected':'Quiet, soft panting'; drawPhone('health',H); }
+    parts.pulse.scale.setScalar(1+Math.max(0,Math.sin(time*H.hr/60*Math.PI*2))*.25);
+  }
+  else if(f.id==='charge'){
+    const cyc=17; let ph=chargePhase; let t=mt;
+    if(ph==='auto'){ t=mt%cyc; ph=t<7?'charge':'home'; if(ph==='home') t-=7; }
+    if(ph==='charge'){
+      charger.visible=true; house.visible=false; zone.visible=false; world.position.set(0,0,0);
+      const cx=1.3, cz=podBaseZ+.4, cy=-.58; charger.position.set(cx+.0,cy,cz);
+      // pod leaves collar, flips flat and lands on puck
+      const p=clamp(t/2.2,0,1), e=ease(p);
+      const start=new THREE.Vector3(0,0,podBaseZ), end=new THREE.Vector3(cx,cy+.13,cz);
+      const local=start.clone().lerp(end,e); local.y+=Math.sin(e*Math.PI)*.5;
+      pod.position.copy(local); pod.rotation.x=-e*Math.PI/2;
+      const charging=t>2.2;
+      if(charging){ battery=Math.min(100,battery+dt*9); }
+      ledHex=charging?0x3FBF62:LED.green[0]; ledOn=charging?(Math.sin(time*3)>-0.3):true;
+      chargeLabel=charging?'Charging '+Math.round(battery)+'%<small>magnetic snap-on</small>':'Snaps onto the charger';
+      setStatus('Battery',Math.round(battery)+'%'+(charging?' • charging':''),battery);
+      shadow.visible=true;
+    } else {
+      charger.visible=false; house.visible=true; zone.visible=true; pod.position.set(0,0,podBaseZ); pod.rotation.x=0;
+      if(battery>=99) battery=100;
+      // dog walks out of the zone and back
+      const L=10, p=(t%L)/L; let x;
+      if(p<.2) x=0; else if(p<.45) x=ease((p-.2)/.25)*6.2; else if(p<.7) x=6.2; else if(p<.95) x=6.2*(1-ease((p-.7)/.25)); else x=0;
+      world.position.x=x; collar.position.y=Math.abs(Math.sin(time*7))*(x>0&&x<6.2?.06:0);
+      const inside=x<3.2-1.0;
+      chargeLabel=inside?'Inside home area<small>BLE on • GPS OFF (saving battery)</small>':'Left home area<small>GPS + LTE-M back ON</small>';
+      setStatus('Location',inside?'🏠 At home • GPS off':'📍 Outside • GPS on',null);
+      ledHex=inside?LED.green[0]:LED.yellow[0];
+      if(!camTween && !userMoved){ controls.target.lerp(new THREE.Vector3(x*.6,0,0),.04); }
+      if(camTween===null && mt<0.1){}
+    }
+    if(ph!==lastChargePh){ lastChargePh=ph; flyTo(ph==='home'?[4,6.5,10]:FEATURES[4].cam[0], ph==='home'?[2,0,0]:FEATURES[4].cam[1],1400); }
+  }
+  else if(f.id==='lost'){
+    viewer.classList.add('night'); hemi.intensity=.18; key.intensity=.15; rim.intensity=.1;
+    ledHex=LED.blue[0]; ledOn=Math.floor(time*2.5)%2===0;
+    // torch sweep lights the reflective stripe
+    const sw=Math.sin(time*1.1); torch.intensity=2.2; torch.position.set(3+sw*1.5,1.6,4.5); torch.target.position.copy(podWorld);
+    mats.stripe.emissiveIntensity=.35+Math.max(0,1-Math.abs(sw))*1.4;
+    // stranger's phone approaches and taps
+    const L=11, t=mt%L; phone.visible=t>1.2;
+    const far=new THREE.Vector3(podWorld.x+1.4,podWorld.y+.4,podWorld.z+.4), near=new THREE.Vector3(podWorld.x+.35,podWorld.y+.1,podWorld.z+.55);
+    const e=ease(clamp((t-1.2)/1.6,0,1)), back=ease(clamp((t-4.2)/1.2,0,1));
+    phone.position.copy(far).lerp(near,e).lerp(far,back); phone.lookAt(camera.position);
+    const step=t<3.2?0:(t<7?1:2);
+    if(step!==lostStep || phoneTick===0){ lostStep=step; drawPhone('nfc',{step}); phoneTick=1; }
+    if(t>2.4&&t<4.6){ nfcWaves.g.visible=true; runWaves(nfcWaves,time,ledWorld,phone.position,.45,1.2); } else nfcWaves.g.visible=false;
+    setStatus('Mode','🔵 Lost Mode on<small style="display:block;font-weight:500;color:var(--muted)">NFC active • live GPS</small>',null);
+  }
+  else if(f.id==='calm'){
+    shellMat.opacity=.35; shellMat.depthWrite=false; inner.visible=true; faceMat.opacity=.6;
+    const L=10, p=(mt%L)/L;
+    const c1=new THREE.Color(LED.red[0]), c2=new THREE.Color(LED.yellow[0]), c3=new THREE.Color(LED.green[0]);
+    const col=p<.45?c1.clone().lerp(c2,p/.45):c2.clone().lerp(c3,clamp((p-.45)/.35,0,1)); ledHex=col.getHex();
+    // vibration pulses
+    const vib=(Math.floor(mt*1.2)%3===0)?Math.sin(time*90)*.012*(1-p*.6):0;
+    pod.position.set(vib,0,podBaseZ); parts.vib.rotation.y+=dt*40;
+    runWaves(sndWaves,time,ledWorld,null,1.4*(1-p*.3),.5); sndWaves.g.visible=true;
+    phone.visible=true; phone.position.set(podWorld.x+1.15,podWorld.y+.2,podWorld.z+.15); phone.lookAt(camera.position);
+    phoneTick+=dt; if(phoneTick>.3){ phoneTick=0; drawPhone('calm',{p}); }
+    setStatus('Stress level',Math.round(80-p*55)+'% • '+(p<.35?'Anxious':(p<.7?'Settling':'Calm')),Math.round(80-p*55));
+  }
+  else if(f.id==='energy'){
+    const cyc=14; let ph=energyPhase, t=mt; if(ph==='auto'){ t=mt%cyc; ph=t<7?'solar':'kinetic'; if(ph==='kinetic') t-=7; }
+    if(solar.parent!==refs.solarSlot) refs.solarSlot.add(solar);
+    solar.visible=true;
+    const sp=ease(clamp(t/1.2,0,1)); solar.position.z=ph==='solar'?(.6*(1-sp)):0;
+    sun.visible=ph==='solar'; pGroup.visible=true;
+    const panelW=new THREE.Vector3(); solar.getWorldPosition(panelW);
+    if(ph==='solar'){
+      collar.position.y=0; collar.rotation.z=0;
+      particles.forEach(m=>{ const u=(m.userData.ph+time*m.userData.sp)%1; m.material.color.set(0xFFD34D);
+        if(u<.6){ m.position.lerpVectors(sun.position,panelW,u/.6); } else { m.position.lerpVectors(panelW,podWorld,(u-.6)/.4); } m.material.opacity=sp; });
+      battery=Math.min(100,battery+dt*1.5);
+      energyLabel='☀️ Solar charging<small>+'+(battery-67).toFixed(1)+'% today</small>';
+    } else {
+      collar.position.y=Math.abs(Math.sin(time*6))*.18; collar.rotation.z=Math.sin(time*6)*.05;
+      particles.forEach((m,i)=>{ const u=(m.userData.ph+time*m.userData.sp*1.4)%1; m.material.color.set(0x7CE0A3); const ang=i*.7+u*4; const r=(1-u)*(R+.5);
+        m.position.set(podWorld.x*u+Math.cos(ang)*r, podWorld.y+(1-u)*.4*Math.sin(i), podWorld.z*u+Math.sin(ang)*r); m.material.opacity=.9; });
+      battery=Math.min(100,battery+dt*1.0);
+      energyLabel='🏃 Kinetic charging<small>energy from running &amp; play</small>';
+    }
+    setStatus('Battery',battery.toFixed(0)+'% • '+(ph==='solar'?'solar':'kinetic'),battery);
+    if(ph!==lastEnergyPh){ lastEnergyPh=ph; card(); }
+  }
+  setLedColor(ledHex,ledOn);
+  ledLight.position.copy(ledWorld);
+}
+let lastChargePh=null, lastEnergyPh=null, userMoved=false;
+controls.addEventListener('start',()=>{ userMoved=true; });
+
+/* ---------- tour ---------- */
+let tourOn=true, tourT=0; const TOUR_LEN=13;
+function stopTour(){ tourOn=false; $('#tourBtn').classList.remove('on'); $('#tourBtn').textContent='▶ Play tour'; $('#prog').style.width='0'; }
+function startTour(){ tourOn=true; tourT=0; $('#tourBtn').classList.add('on'); $('#tourBtn').textContent='❚❚ Pause tour'; setMode(0); }
+$('#tourBtn').onclick=()=>tourOn?stopTour():startTour();
+$('#rotBtn').onclick=()=>{ controls.autoRotate=!controls.autoRotate; $('#rotBtn').classList.toggle('on',controls.autoRotate); };
+$('#resetBtn').onclick=()=>{ userMoved=false; const f=FEATURES[mode]; flyTo(f.cam[0],f.cam[1]); };
+
+/* ---------- resize & loop ---------- */
+function resize(){ const w=viewer.clientWidth,h=viewer.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+window.addEventListener('resize',resize);
+buildStrap(); resize(); setMode(0);
+$('#tourBtn').textContent='❚❚ Pause tour';
+let last=performance.now();
+function loop(now){
+  const dt=clamp((now-last)/1000,0,.05); last=now; const time=now/1000;
+  if(camTween){ const p=clamp((now-camTween.s)/camTween.d,0,1), e=ease(p); camera.position.lerpVectors(camTween.p0,camTween.p1,e); controls.target.lerpVectors(camTween.t0,camTween.t1,e); if(p>=1) camTween=null; }
+  // keep auto-rotate gentle in close-up modes
+  controls.autoRotateSpeed = (mode===0||mode===7)?1.1:0.35;
+  if(FEATURES[mode].id==='lost'||FEATURES[mode].id==='health'||FEATURES[mode].id==='calm') controls.autoRotate=false; else controls.autoRotate=$('#rotBtn').classList.contains('on');
+  animate(dt,time);
+  if(tourOn){ tourT+=dt; $('#prog').style.width=(tourT/TOUR_LEN*100)+'%'; if(tourT>=TOUR_LEN){ tourT=0; setMode((mode+1)%FEATURES.length); userMoved=false; } }
+  controls.update(); renderer.render(scene,camera); updateLabels();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
