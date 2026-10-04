@@ -9,9 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg1:#EFECE6; --bg2:#DAD5CC; --panel:#FFFFFF; --line:#E6E2DA; --text:#1E1E1E; --muted:#74746F;
+  /*--bg1:#EFECE6; --bg2:#DAD5CC; --panel:#FFFFFF; --line:#E6E2DA; --text:#1E1E1E; --muted:#74746F;*/
+  --bg1:#00FF00; --bg2:#00FF00; --panel:#FFFFFF; --line:#E6E2DA; --text:#1E1E1E; --muted:#74746F;
   --green:#4E6E52; --green-bg:#E5EDE4; --orange:#E07A5F; --orange-bg:#FBE9E4; --chip:#F2F0EB;
-  box-sizing:border-box;
+  box-sizing:border-box;s
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -33,7 +34,8 @@ button:focus-visible{outline:2px solid var(--orange);outline-offset:2px;border-r
 
 .app{height:100%;display:grid;grid-template-columns:1fr 390px}
 .viewer{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,var(--bg1),var(--bg2));transition:background .8s}
-.viewer.night{background:radial-gradient(ellipse at 50% 40%,#1B2236,#070A12)}
+/*.viewer.night{background:radial-gradient(ellipse at 50% 40%,#1B2236,#070A12)}*/
+.viewer.night{background:radial-gradient(ellipse at 50% 40%,#00FF00,#00FF00)}
 canvas{display:block;width:100%;height:100%;touch-action:none}
 .title{position:absolute;left:20px;top:16px;pointer-events:none;z-index:3}
 .title h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.01em}
@@ -495,7 +497,7 @@ function renderFeats(){
 function resetScene(){
   collar.position.set(0,0,0); world.position.set(0,0,0); collar.rotation.set(.12,0,0);
   pod.position.set(0,0,podBaseZ); pod.rotation.set(0,0,0);
-  shellMat.opacity=1; faceMat.opacity=1; shellMat.depthWrite=true; inner.visible=false;
+  shellMat.opacity=1; faceMat.opacity=1; shellMat.depthWrite=true; inner.visible=false; glow.position.z=.12;
   phone.visible=false; sun.visible=false; house.visible=false; zone.visible=false; charger.visible=false; pGroup.visible=false;
   [bleWaves,nfcWaves,sndWaves].forEach(w=>w.g.visible=false);
   fieldLines.forEach(l=>l.material.opacity=0); fieldGroup.visible=false;
@@ -581,7 +583,7 @@ function animate(dt,time){
     const tk=Math.floor(mt/2.6)%4; if(!ledManual) $('#prog').style.width=((mt%2.6)/2.6*100)+'%';
   }
   else if(f.id==='health'){
-    shellMat.opacity=.16; shellMat.depthWrite=false; faceMat.opacity=.25; inner.visible=true;
+    shellMat.opacity=.16; shellMat.depthWrite=false; faceMat.opacity=1; inner.visible=true; glow.position.z=.08;
     // phone
     phone.visible=true; phone.position.set(podWorld.x+1.15,podWorld.y+.25,podWorld.z+.15); phone.lookAt(camera.position);
     runWaves(bleWaves,time,ledWorld,phone.position,.5,.55);
@@ -597,9 +599,10 @@ function animate(dt,time){
       const cx=1.3, cz=podBaseZ+.4, cy=-.58; charger.position.set(cx+.0,cy,cz);
       // pod leaves collar, flips flat and lands on puck
       const p=clamp(t/2.2,0,1), e=ease(p);
-      const start=new THREE.Vector3(0,0,podBaseZ), end=new THREE.Vector3(cx,cy+.13,cz);
+      collar.updateMatrixWorld(true);
+      const start=new THREE.Vector3(0,0,podBaseZ), end=collar.worldToLocal(new THREE.Vector3(cx,cy+.035+.09+.005,cz));
       const local=start.clone().lerp(end,e); local.y+=Math.sin(e*Math.PI)*.5;
-      pod.position.copy(local); pod.rotation.x=-e*Math.PI/2;
+      pod.position.copy(local); pod.rotation.x=-e*(Math.PI/2+collar.rotation.x);
       const charging=t>2.2;
       if(charging){ battery=Math.min(100,battery+dt*9); }
       ledHex=charging?0x3FBF62:LED.green[0]; ledOn=charging?(Math.sin(time*3)>-0.3):true;
